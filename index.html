@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kesseki Counter</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100..900&family=Source+Code+Pro:wght@200..900&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "M PLUS 1";
+        margin: 0;
+        background: #fafafa;
+      }
+
+      .container {
+        max-width: 768px;
+        margin: 0 auto;
+        padding: 10px;
+      }
+
+      .topbar {
+        font-family: "Source Code Pro";
+        border-bottom: 1px solid #eee;
+        padding: 10px;
+        margin-bottom: 10px;
+        font-size: 1.2em;
+      }
+
+      .subjects {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .subject {
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 10px;
+        aspect-ratio: 1 / 1;
+        position: relative;
+        background: #fff;
+      }
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        font-family: "Source Code Pro";
+        font-size: 0.9em;
+      }
+
+      .bar {
+        margin-top: 10px;
+      }
+
+      .empty {
+        width: 100%;
+        height: 10px;
+        background: #eee;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+
+      .fill {
+        height: 100%;
+        background: #333;
+        width: 0%;
+        transition: 0.2s;
+      }
+
+      .main {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .left {
+        display: flex;
+        flex-direction: column;
+        width: 50%;
+        gap: 5px;
+      }
+
+      .right {
+        width: 50%;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #000;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      button:active {
+        transform: scale(0.97);
+      }
+
+      .add-btn {
+        margin-top: 10px;
+      }
+
+      /* ===== スマホ最適化 ===== */
+      @media (max-width: 600px) {
+        .subjects {
+          grid-template-columns: 1fr;
+        }
+
+        .subject {
+          aspect-ratio: auto;
+          height: auto;
+        }
+
+        .main {
+          position: static;
+          margin-top: 10px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="topbar">Kesseki Counter</div>
+      <div class="subjects" id="subjects"></div>
+      <button class="add-btn" onclick="addSubject()">＋ 科目追加</button>
+    </div>
+
+    <script>
+      const subjectsEl = document.getElementById("subjects");
+
+      // ===== 保存 =====
+      function save() {
+        const data = [];
+        document.querySelectorAll(".subject").forEach((el) => {
+          data.push({
+            name: el.dataset.name,
+            max: Number(el.dataset.max),
+            count: Number(el.dataset.count),
+          });
+        });
+        localStorage.setItem("subjects", JSON.stringify(data));
+      }
+
+      function load() {
+        const data = JSON.parse(localStorage.getItem("subjects") || "[]");
+        data.forEach(createSubject);
+      }
+
+      // ===== 作成 =====
+      function createSubject({ name, max, count }) {
+        const el = document.createElement("div");
+        el.className = "subject";
+        el.dataset.name = name;
+        el.dataset.max = max;
+        el.dataset.count = count;
+
+        el.innerHTML = `
+          <div class="top">
+            <span>${name}</span>
+            <span class="count"></span>
+          </div>
+
+          <div class="bar">
+            <div class="empty">
+              <div class="fill"></div>
+            </div>
+          </div>
+
+          <div class="main">
+            <div class="left">
+              <button class="plus">＋</button>
+              <button class="minus">－</button>
+            </div>
+            <div class="right">
+              <button class="delete">削除</button>
+            </div>
+          </div>
+        `;
+
+        const countEl = el.querySelector(".count");
+        const fillEl = el.querySelector(".fill");
+
+        function update() {
+          const count = Number(el.dataset.count);
+          const max = Number(el.dataset.max);
+
+          countEl.textContent = `${count}/${max}`;
+          fillEl.style.width = `${(count / max) * 100}%`;
+
+          if (count >= max - 3) {
+            countEl.style.color = "red";
+          } else if (count >= max - 6) {
+            countEl.style.color = "orange";
+          } else {
+            countEl.style.color = "black";
+          }
+
+          save();
+        }
+
+        el.querySelector(".plus").onclick = () => {
+          let c = Number(el.dataset.count);
+          if (c < max) {
+            c++;
+            el.dataset.count = c;
+            update();
+            if (c >= max) alert("未履修ライン到達");
+          }
+        };
+
+        el.querySelector(".minus").onclick = () => {
+          let c = Number(el.dataset.count);
+          if (c > 0) {
+            c--;
+            el.dataset.count = c;
+            update();
+          }
+        };
+
+        el.querySelector(".delete").onclick = () => {
+          if (confirm("削除する？")) {
+            el.remove();
+            save();
+          }
+        };
+
+        update();
+        subjectsEl.appendChild(el);
+      }
+
+      function addSubject() {
+        const name = prompt("科目名") || "科目";
+        const credits = parseInt(prompt("単位数")) || 2;
+        const max = credits * 9;
+
+        createSubject({ name, max, count: 0 });
+        save();
+      }
+
+      // 初期化
+      load();
+    </script>
+  </body>
+</html>
