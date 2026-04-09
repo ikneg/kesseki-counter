@@ -196,7 +196,7 @@
           const count = Number(el.dataset.count);
           const max = Number(el.dataset.max);
 
-          countEl.textContent = `${count}/${max}`;
+          countEl.textContent = `欠席数: ${count}/${max}`;
           fillEl.style.width = `${(count / max) * 100}%`;
 
           if (count >= max - 3) {
